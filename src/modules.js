@@ -28,7 +28,26 @@ const AppModules = {
             const img = card.querySelector('img[data-full-src*=".mp4"], img[data-full-src*=".mov"]');
             if (!img) return;
 
+            card._hasPreview = true;
+
+            const cleanup = () => {
+                clearTimeout(card._previewTimeout);
+                const video = card.querySelector('.ext-preview-video');
+                if (video) {
+                    video.pause();
+                    video.src = "";
+                    video.load();
+                    video.remove();
+                }
+                card._hasPreview = false;
+                card.removeEventListener('mouseleave', cleanup);
+            };
+
+            card.addEventListener('mouseleave', cleanup);
+
             card._previewTimeout = setTimeout(() => {
+                if (!card._hasPreview) return;
+
                 let videoUrl = img.getAttribute('data-full-src');
                 if (videoUrl.startsWith('/')) videoUrl = window.location.origin + videoUrl;
                 videoUrl += "#t=0,10";
@@ -37,36 +56,22 @@ const AppModules = {
                 if (!container) return;
 
                 const video = document.createElement('video');
-                video.muted = true;
-                video.defaultMuted = true;
-                video.loop = true;
-                video.playsInline = true;
+                video.muted = video.defaultMuted = video.loop = video.playsInline = true;
                 video.preload = "metadata";
                 video.className = 'ext-preview-video';
                 video.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 999; pointer-events: none; border-radius: inherit; background: #000; opacity: 0; transition: opacity 0.2s;';
 
-                video.onerror = () => { video.remove(); card._hasPreview = false; };
+                video.onerror = () => cleanup();
                 video.oncanplay = () => {
                     video.style.opacity = '1';
                     video.play().catch(() => { });
                 };
 
                 video.src = videoUrl;
-                card._hasPreview = true;
                 container.appendChild(video);
-
-                const leaveHandler = () => {
-                    clearTimeout(card._previewTimeout);
-                    video.pause();
-                    video.src = "";
-                    video.load();
-                    video.remove();
-                    card._hasPreview = false;
-                    card.removeEventListener('mouseleave', leaveHandler);
-                };
-                card.addEventListener('mouseleave', leaveHandler);
             }, 150);
         };
+
         document.addEventListener('mouseover', window._extEnter, true);
     }
 };
