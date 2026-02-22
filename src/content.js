@@ -13,7 +13,7 @@
     }
     if (!DEFAULTS.theme) DEFAULTS.theme = { enabled: false, bgColor: "#202020", bgImage: "" };
     if (!DEFAULTS.previews) DEFAULTS.previews = { enabled: false };
-
+    if (!DEFAULTS.scroll) DEFAULTS.scroll = { enabled: false };
     if (!("accentColor" in DEFAULTS.theme)) DEFAULTS.theme.accentColor = "#789d2a";
     if (!("gradientEnabled" in DEFAULTS.theme)) DEFAULTS.theme.gradientEnabled = false;
     if (!("gradientColor" in DEFAULTS.theme)) DEFAULTS.theme.gradientColor = "#4a4a4a";
@@ -93,6 +93,17 @@
           </label>
       </div>
 
+      <div class="settings-row">
+          <div class="settings-row-info">
+              <span class="settings-row-label">Кнопка «Наверх»</span>
+              <div class="settings-row-desc">Показать кнопку быстрого возврата</div>
+          </div>
+          <label class="settings-toggle">
+              <input type="checkbox" id="ext-scroll-switch">
+              <span class="settings-toggle-slider"></span>
+          </label>
+      </div>
+
       <button id="ext-reset-all" style="width:100%; margin-top:8px; padding:10px;">
           Сбросить дополнительные настройки
       </button>
@@ -105,6 +116,7 @@
   const setupEventListeners = () => {
     const swTheme = document.getElementById("ext-master-switch");
     const swVideo = document.getElementById("ext-preview-switch");
+    const swScroll = document.getElementById("ext-scroll-switch");
 
     const group = document.getElementById("ext-controls-group");
     const col = document.getElementById("ext-color");
@@ -121,16 +133,17 @@
       gradWrap.style.display = (swTheme.checked && swGrad.checked) ? "block" : "none";
     };
 
-    API.storage.local.get(["theme", "previews"], (res) => {
+    API.storage.local.get(["theme", "previews", "scroll"], (res) => {
       const themeData = { ...DEFAULTS.theme, ...(res.theme || {}) };
       const previewsData = { ...DEFAULTS.previews, ...(res.previews || {}) };
+      const scrollData = { ...DEFAULTS.scroll, ...(res.scroll || {}) };
 
       swTheme.checked = !!themeData.enabled;
       swVideo.checked = !!previewsData.enabled;
+      swScroll.checked = !!scrollData.enabled;
 
       col.value = themeData.bgColor || DEFAULTS.theme.bgColor;
       img.value = themeData.bgImage || "";
-
       accent.value = themeData.accentColor || DEFAULTS.theme.accentColor;
 
       swGrad.checked = !!themeData.gradientEnabled;
@@ -139,6 +152,7 @@
       syncVisibility();
       AppModules.applyTheme(themeData);
       AppModules.initVideoPreviews(!!previewsData.enabled);
+      AppModules.initScrollTop(!!scrollData.enabled);
     });
 
     const save = () => {
@@ -152,22 +166,23 @@
       };
 
       const previewData = { enabled: !!swVideo.checked };
+      const scrollData = { enabled: !!swScroll.checked };
+      API.storage.local.set({ theme: themeData, previews: previewData, scroll: scrollData });
 
-      API.storage.local.set({ theme: themeData, previews: previewData });
       syncVisibility();
       AppModules.applyTheme(themeData);
       AppModules.initVideoPreviews(!!swVideo.checked);
+      AppModules.initScrollTop(!!swScroll.checked);
     };
 
     swTheme.onchange = save;
     swVideo.onchange = save;
+    swScroll.onchange = save;
 
     col.oninput = save;
     accent.oninput = save;
-
     swGrad.onchange = save;
     gradColor.oninput = save;
-
     img.onchange = save;
 
     document.getElementById("ext-reset-all").onclick = () =>
@@ -180,10 +195,13 @@
 
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
-  API.storage.local.get(["theme", "previews"], (res) => {
+  API.storage.local.get(["theme", "previews", "scroll"], (res) => {
     const themeData = { ...DEFAULTS.theme, ...(res.theme || {}) };
     const previewsData = { ...DEFAULTS.previews, ...(res.previews || {}) };
+    const scrollData = { ...DEFAULTS.scroll, ...(res.scroll || {}) };
     AppModules.applyTheme(themeData);
+
     if (previewsData.enabled) AppModules.initVideoPreviews(true);
+    if (scrollData.enabled) AppModules.initScrollTop(true);
   });
 })();
