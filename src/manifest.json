@@ -16,12 +16,15 @@
             "matches": [
                 "https://eblo.id/*"
             ],
+            "css": [
+                "theme.css"
+            ],
             "js": [
                 "config.js",
                 "modules.js",
                 "content.js"
             ],
-            "run_at": "document_end"
+            "run_at": "document_start"
         }
     ]
 }
